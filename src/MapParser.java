@@ -2,17 +2,26 @@ import java.io.File;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
+import java.text.DecimalFormat;
+import java.text.DecimalFormatSymbols;
+import java.util.Locale;
 
 public class MapParser {
-    private static final String FP_PATTERN_9 = "%.9f";
-    private static final String FP_PATTERN_0 = "%.0f";
+//    private static final String FP_PATTERN_9 = "%.9f";
+//    private static final String FP_PATTERN_0 = "%.0f";
     private static byte[] buff = new byte[1024];
     private static StringBuilder b = new StringBuilder();
     private static String currentToken;
     private static long rawTokenLength;
     private static int indent = 0;
 
+    private static DecimalFormat df;
+
     public static void main(String[] args) throws Exception {
+        DecimalFormatSymbols dfs = new DecimalFormatSymbols(Locale.getDefault());
+        dfs.setDecimalSeparator('.');
+        df = new DecimalFormat("0.#########", dfs);
+
         try (RandomAccessFile input = new RandomAccessFile("C:\\utils\\xbox\\_mars_city1_1.gob\\base\\xbox_gen\\maps\\vv\\mars_city1_1.map.x", "r")) {
             PrintStream o = System.out;
             File outputDir = new File("c:\\temp\\xbox\\");
@@ -79,7 +88,8 @@ public class MapParser {
     }
 
     private static void printBrushDef3(RandomAccessFile file) throws Exception {
-        println("brushDef3 { ");
+        println("brushDef3");
+        println("{");
         indent++;
         while(!"{".equals(readToken(file)));
         while(!"}".equals(readToken(file))) {
@@ -93,10 +103,11 @@ public class MapParser {
 
     private static void printPatchDef(RandomAccessFile file, boolean isPatchDef3) throws Exception {
         if (isPatchDef3) {
-            println("patchDef3 { ");
+            println("patchDef3");
         } else {
-            println("patchDef2 { ");
+            println("patchDef2");
         }
+        println("{");
         indent++;
         while(!"{".equals(readToken(file)));
         printf("");
@@ -142,7 +153,7 @@ public class MapParser {
             load1DMatrix(file, 2, info);
         }
         printf("");
-        print1DMatrix(info, FP_PATTERN_0);
+        print1DMatrix(info);
         int rows = (int) info[0];
         int columns = (int) info[1];
         println();
@@ -151,7 +162,7 @@ public class MapParser {
         for (int r=0; r<rows; r++) {
             printf("( ");
             for (int c=0; c<columns; c++) {
-                print1DMatrix(file, 5, FP_PATTERN_9);
+                print1DMatrix(file, 5);
             }
             printf_noindent(")\n");
         }
@@ -161,25 +172,27 @@ public class MapParser {
     }
 
     private static void printBrushDef3Rec(RandomAccessFile file) throws Exception {
-        print1DMatrix(file, 4, FP_PATTERN_9);
+        print1DMatrix(file, 4);
         printf_noindent("( ");
-        print1DMatrix(file, 3, FP_PATTERN_9);
-        print1DMatrix(file, 3, FP_PATTERN_9);
+        print1DMatrix(file, 3);
+        print1DMatrix(file, 3);
         printf_noindent(") ");
         patternSync(file,"# ");
         printLexerString(file);
+        printf_noindent(" 0 0 0");
     }
 
-    private static void print1DMatrix(RandomAccessFile file, int length, String pattern) throws Exception {
+    private static void print1DMatrix(RandomAccessFile file, int length) throws Exception {
         float[] values = new float[length];
         load1DMatrix(file, length, values);
-        print1DMatrix(values, pattern);
+        print1DMatrix(values);
     }
 
-    private static void print1DMatrix(float[] values, String pattern) throws Exception {
+    private static void print1DMatrix(float[] values) throws Exception {
         printf_noindent("( ");
         for (int i=0; i<values.length; i++) {
-            printf_noindent(pattern + " ", values[i]);
+            printNumber(values[i]);
+            printf_noindent(" ");
         }
         printf_noindent(") ");
 
@@ -223,6 +236,10 @@ public class MapParser {
 
     private static void readData(RandomAccessFile file, byte[] data, int toBeRead) throws Exception {
         file.readFully(data, 0,toBeRead);
+    }
+
+    private static void printNumber(float number) {
+        System.out.print(df.format(number));
     }
 
     private static void println(String... txt) {
