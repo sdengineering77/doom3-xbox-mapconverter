@@ -6,7 +6,7 @@ import java.text.DecimalFormat;
 import java.text.DecimalFormatSymbols;
 import java.util.Locale;
 
-public class MapParser {
+public class MapConverter {
 //    private static final String FP_PATTERN_9 = "%.9f";
 //    private static final String FP_PATTERN_0 = "%.0f";
     private static byte[] buff = new byte[1024];
