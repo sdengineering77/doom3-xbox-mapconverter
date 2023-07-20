@@ -1,30 +1,42 @@
 import java.io.RandomAccessFile;
 import java.nio.charset.StandardCharsets;
 
-public class CMParser {
+public class CMParser extends ConverterBase {
     private static byte[] buff = new byte[1024];
 
     private record vertex(float x, float y, float z) {};
 
     public static void main(String[] args) throws Exception {
         try (RandomAccessFile file = new RandomAccessFile("C:\\utils\\xbox\\_mars_city1_1.gob\\base\\xbox_gen\\maps\\vv\\mars_city1_1.cm.x", "r")) {
+            CMParser p = new CMParser(file);
+            p.convert();
+        }
+    }
+
+    public CMParser(RandomAccessFile file) throws Exception {
+        super(file);
+    }
+
+    @Override
+    void convert() throws Exception {
 //            file.seek(Integer.parseInt("166a17", 16));
 //            file.seek(Integer.parseInt("166a38", 16));
 //            file.seek(Integer.parseInt("16de52", 16));
-//            file.seek(Integer.parseInt("16de35", 16));
-            file.seek(Integer.parseInt("16de20", 16));
-            String name = readString(file);
-            System.out.println(name);
-            vertex v1 = readVertex(file);
-            vertex v2 = readVertex(file);
-            System.out.println("( " + v1.x + " " + v1.y + " " + v1.z + " ) ");
-            System.out.println("( " + v2.x + " " + v2.y + " " + v2.z + " ) ");
-            int type = readInt(file);
-            System.out.println(" type " + type);
-            readUnsignedByte(file);
-            if (type == 3) readVerts(file);
-            System.out.format("%08X\n", file.getFilePointer());
-        }
+//        input.seek(Integer.parseInt("16de35", 16));
+//        input.seek(Integer.parseInt("16de20", 16));
+        input.seek(Integer.parseInt("169853", 16));
+        String name = readString(input);
+        System.out.println(name);
+        vertex v1 = readVertex(input);
+        vertex v2 = readVertex(input);
+        System.out.println("( " + df.format(v1.x) + " " + df.format(v1.y) + " " + df.format(v1.z) + " ) ");
+        System.out.println("( " + df.format(v2.x) + " " + df.format(v2.y) + " " + df.format(v2.z) + " ) ");
+        int type = readInt();
+        System.out.println(" type " + type);
+        readUnsignedByte(input);
+        if (type == 3) readVerts(input);
+        System.out.format("%08X\n", input.getFilePointer());
+
     }
 
     private static void readVerts(RandomAccessFile file) throws Exception {

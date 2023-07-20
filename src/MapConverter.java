@@ -1,35 +1,18 @@
-import java.io.File;
 import java.io.PrintStream;
 import java.io.RandomAccessFile;
-import java.nio.charset.StandardCharsets;
-import java.text.DecimalFormat;
-import java.text.DecimalFormatSymbols;
-import java.util.Locale;
 
-public class MapConverter {
-//    private static final String FP_PATTERN_9 = "%.9f";
-//    private static final String FP_PATTERN_0 = "%.0f";
-    private static byte[] buff = new byte[1024];
-    private static StringBuilder b = new StringBuilder();
-    private static String currentToken;
-    private static long rawTokenLength;
-    private static int indent = 0;
-
-    private static DecimalFormat df;
-
+public class MapConverter extends ConverterBase {
     public static void main(String[] args) throws Exception {
-        DecimalFormatSymbols dfs = new DecimalFormatSymbols(Locale.getDefault());
-        dfs.setDecimalSeparator('.');
-        df = new DecimalFormat("0.#########", dfs);
 
         try (RandomAccessFile input = new RandomAccessFile("C:\\utils\\xbox\\_mars_city1_1.gob\\base\\xbox_gen\\maps\\vv\\mars_city1_1.map.x", "r")) {
             PrintStream o = System.out;
-            File outputDir = new File("c:\\temp\\xbox\\");
-            if (!outputDir.exists()) outputDir.mkdirs();
-            System.setOut(new PrintStream("c:\\temp\\xbox\\mars_city1_1.map"));
+//            File outputDir = new File("c:\\temp\\xbox\\");
+//            if (!outputDir.exists()) outputDir.mkdirs();
+//            System.setOut(new PrintStream("c:\\temp\\xbox\\mars_city1_1.map"));
+            
+            MapConverter c = new MapConverter(input);
+            c.convert();
 
-            printf("%s %s\n", readToken(input), readToken(input));
-            printMapEntries(input);
             System.out.flush();
             System.out.close();
             System.setOut(o);
@@ -37,71 +20,81 @@ public class MapConverter {
         }
     }
 
-    private static void printMapEntries(RandomAccessFile file) throws Exception {
-        while(file.getFilePointer() < file.length() && "{".equals(readToken(file))) {
+    public MapConverter(RandomAccessFile file) throws Exception {
+        super(file);
+    }
+
+    @Override
+    void convert() throws Exception {
+        printf("%s %s\n", readToken(), readToken());
+        printMapEntries();
+    }
+
+    private void printMapEntries() throws Exception {
+        while(input.getFilePointer() < input.length() && "{".equals(readToken())) {
             println("{");
             indent++;
-            printMapEntryMeta(file);
-            printDefs(file);
+            printMapEntryMeta();
+            printDefs();
             indent--;
             println("}");
         }
     }
 
-    private static void printMapEntryMeta(RandomAccessFile file) throws Exception {
-        while(!"{".equals(readToken(file))) {
-            printf("%s %s\n", currentToken, readToken(file));
+    private void printMapEntryMeta() throws Exception {
+        while(!"{".equals(readToken())) {
+            printf("%s %s\n", currentToken, readToken());
         }
-        unreadToken(file);
+        unreadToken();
     }
 
-    private static void printDefs(RandomAccessFile file) throws Exception {
-        while("{".equals(readToken(file))) {
+    private void printDefs() throws Exception {
+        while("{".equals(readToken())) {
             println("{ ");
-            String type = readToken(file);
+            String type = readToken();
             indent++;
             if ("brushDef3".equals(type)) {
-                printBrushDef3(file);
+                printBrushDef3();
             } else if ("patchDef2".equals(type)) {
-                printPatchDef(file, false);
+                printPatchDef(false);
             } else if ("patchDef3".equals(type)) {
-                printPatchDef(file, true);
+                printPatchDef(true);
             } else {
-                skipBody(file);
+                skipBody();
             }
             indent--;
-            patternSync(file, "}");
+            patternSync("}");
             println("} ");
         }
 
     }
 
-    private static void skipBody(RandomAccessFile file) throws Exception {
+    private void skipBody() throws Exception {
         int level = 1;
-        while(!"{".equals(readToken(file)));
+        while(!"{".equals(readToken()));
         while(level > 0) {
-            String token = readToken(file);
+            String token = readToken();
             if ("{".equals(token)) level++;
             if ("}".equals(token)) level--;
 
         }
     }
 
-    private static void printBrushDef3(RandomAccessFile file) throws Exception {
+    private void printBrushDef3() throws Exception {
         println("brushDef3");
         println("{");
         indent++;
-        while(!"{".equals(readToken(file)));
-        while(!"}".equals(readToken(file))) {
+        while(!"{".equals(readToken()));
+        while(!"}".equals(readToken())) {
             printf("");
-            printBrushDef3Rec(file);
+            printBrushDef3Rec();
             println();
         }
         indent--;
         println("} ");
     }
 
-    private static void printPatchDef(RandomAccessFile file, boolean isPatchDef3) throws Exception {
+    private void printPatchDef(boolean isPatchDef3) throws Exception {
         if (isPatchDef3) {
             println("patchDef3");
         } else {
@@ -109,48 +102,25 @@ public class MapConverter {
         }
         println("{");
         indent++;
-        while(!"{".equals(readToken(file)));
+        while(!"{".equals(readToken()));
         printf("");
-        printLexerString(file);
+        printLexerString();
         println();
-        while(!"}".equals(readToken(file))) {
-            printPatchDefRec(file, isPatchDef3);
+        while(!"}".equals(readToken())) {
+            printPatchDefRec(isPatchDef3);
         }
         indent--;
         println("} ");
     }
 
-    private static void unreadToken(RandomAccessFile file) throws Exception {
-        file.seek(file.getFilePointer() - rawTokenLength);
-        currentToken = null;
-        rawTokenLength = 0;
-    }
-
-    private static String readToken(RandomAccessFile file) throws Exception {
-        boolean parsing = false;
-        boolean quoted = false;
-        b.setLength(0);
-        byte read;
-        while((read = file.readByte()) > 0x20 || !parsing || quoted) {
-            if (read > 0x20) parsing = true;
-            if (parsing && read == '"') quoted = quoted ? false : true;
-            if (parsing) {
-                b.append((char) read);
-            }
-        }
-        currentToken = b.toString();
-        rawTokenLength = currentToken.length() + 1;
-        return currentToken;
-    }
-
-    private static void printPatchDefRec(RandomAccessFile file, boolean isPatchDef3) throws Exception {
+    private void printPatchDefRec(boolean isPatchDef3) throws Exception {
         float[] info;
         if (isPatchDef3) {
             info = new float[] {0, 0, 0, 0, 0, 0, 0}; // pc version has 3 more values (usually 0?)
-            load1DMatrix(file, 4, info);
+            load1DMatrix(4, info);
         } else {
             info = new float[] {0, 0, 0, 0, 0}; // pc version has 3 more values (usually 0?)
-            load1DMatrix(file, 2, info);
+            load1DMatrix(2, info);
         }
         printf("");
         print1DMatrix(info);
@@ -162,33 +132,33 @@ public class MapConverter {
         for (int r=0; r<rows; r++) {
             printf("( ");
             for (int c=0; c<columns; c++) {
-                print1DMatrix(file, 5);
+                print1DMatrix(5);
             }
             printf_noindent(")\n");
         }
         indent--;
         println(")");
-        patternSync(file," #");
+        patternSync(" #");
     }
 
-    private static void printBrushDef3Rec(RandomAccessFile file) throws Exception {
-        print1DMatrix(file, 4);
+    private void printBrushDef3Rec() throws Exception {
+        print1DMatrix(4);
         printf_noindent("( ");
-        print1DMatrix(file, 3);
-        print1DMatrix(file, 3);
+        print1DMatrix(3);
+        print1DMatrix(3);
         printf_noindent(") ");
-        patternSync(file,"# ");
-        printLexerString(file);
+        patternSync("# ");
+        printLexerString();
         printf_noindent(" 0 0 0");
     }
 
-    private static void print1DMatrix(RandomAccessFile file, int length) throws Exception {
+    private void print1DMatrix(int length) throws Exception {
         float[] values = new float[length];
-        load1DMatrix(file, length, values);
+        load1DMatrix(length, values);
         print1DMatrix(values);
     }
 
-    private static void print1DMatrix(float[] values) throws Exception {
+    private void print1DMatrix(float[] values) throws Exception {
         printf_noindent("( ");
         for (int i=0; i<values.length; i++) {
             printNumber(values[i]);
@@ -198,64 +168,16 @@ public class MapConverter {
 
     }
 
-    private static float[] load1DMatrix(RandomAccessFile file, int length, float[] result) throws Exception {
-        for (int i=0; i<length; i++) {
-            result[i] = readFloat(file);
-        }
-        return result;
-    }
-
-    private static void printLexerString(RandomAccessFile file) throws Exception {
+    private void printLexerString() throws Exception {
         b.setLength(0);
-        patternSync(file, "\"");
+        patternSync("\"");
         byte read;
         b.append('"');
-        while((read = file.readByte()) != '"') {
+        while((read = input.readByte()) != '"') {
             b.append((char) read);
         }
         b.append('"');
         printf_noindent(b.toString());
     }
 
-    private static void patternSync(RandomAccessFile file, String pattern) throws Exception {
-        for (byte lookFor : pattern.getBytes(StandardCharsets.US_ASCII)) {
-            while(file.readByte() != lookFor);
-        }
-    }
-
-    private static float readFloat(RandomAccessFile file) throws Exception {
-        int i = readInt(file);
-        return Float.intBitsToFloat(i);
-    }
-
-    private static int readInt(RandomAccessFile file) throws Exception {
-        readData(file, buff, 4);
-        int data = (buff[0] & 0xFF) + ((buff[1] & 0xFF) << 8) + ((buff[2] & 0xFF) << 16) + ((buff[3] & 0xFF) << 24);
-        return data;
-    }
-
-    private static void readData(RandomAccessFile file, byte[] data, int toBeRead) throws Exception {
-        file.readFully(data, 0,toBeRead);
-    }
-
-    private static void printNumber(float number) {
-        System.out.print(df.format(number));
-    }
-
-    private static void println(String... txt) {
-        if (txt.length > 0) {
-            for (int i=0; i<indent; i++) System.out.print(' ');
-            System.out.println(txt[0]);
-        } else {
-            System.out.println();
-        }
-    }
-    private static void printf(String txt, Object... vars) {
-        for (int i=0; i<indent; i++) System.out.print(' ');
-        System.out.printf(txt, vars);
-    }
-    
-    private static void printf_noindent(String txt, Object... vars) {
-        System.out.printf(txt, vars);
-    }
 }
