@@ -76,8 +76,7 @@ public abstract class ConverterBase {
     }
 
     protected float readFP_0_16_Float() throws Exception {
-        readData(2);
-        float raw = (buff[0] & 0xFF) + ((buff[1] & 0xFF) << 8);
+        float raw = readWord();
         float value = (raw - 0x8000) / 0x8000;
 
         return value;
@@ -89,8 +88,14 @@ public abstract class ConverterBase {
         return data;
     }
 
+    protected int readWord() throws Exception {
+        readData(2);
+        int data = (buff[0] & 0xFF) + ((buff[1] & 0xFF) << 8);
+        return data;
+    }
+
     protected void readData(int toBeRead) throws Exception {
-        input.readFully(buff, 0,toBeRead);
+        input.readFully(buff, 0, toBeRead);
     }
 
     protected void printNumber(float number) {

@@ -20,9 +20,9 @@ public class MD5AnimConverter extends ConverterBase {
         try (RandomAccessFile input = new RandomAccessFile("C:\\utils\\xbox\\_mars_city1_1.gob\\base\\xbox_gen\\models\\md5\\environments\\storagecabinet.md5anim.x", "r")) {
 //        try (RandomAccessFile input = new RandomAccessFile("C:\\utils\\xbox\\_mars_city1_1.gob\\base\\xbox_gen\\models\\md5\\items\\flashlight_view\\swing1.md5anim.x", "r")) {
             PrintStream o = System.out;
-            File outputDir = new File("c:\\temp\\xbox\\");
-            if (!outputDir.exists()) outputDir.mkdirs();
-            System.setOut(new PrintStream("c:\\temp\\xbox\\models\\md5\\environments\\storagecabinet.md5anim.x"));
+//            File outputDir = new File("c:\\temp\\xbox\\");
+//            if (!outputDir.exists()) outputDir.mkdirs();
+//            System.setOut(new PrintStream("c:\\temp\\xbox\\models\\md5\\environments\\storagecabinet.md5anim"));
             MD5AnimConverter c = new MD5AnimConverter(input);
             c.convert();
 
