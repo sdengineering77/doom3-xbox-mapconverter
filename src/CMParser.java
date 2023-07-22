@@ -40,15 +40,32 @@ public class CMParser extends ConverterBase {
         System.out.format("%08X\n", input.getFilePointer());
         plane[] planes = readPlanes(); // the planes (refered to in polies and brushes?)
         System.out.format("%08X\n", input.getFilePointer());
-        readPolies(planes); // the polies and brushes
+        readPolies1(planes); // the brushes ?
         System.out.format("%08X\n", input.getFilePointer());
+        readPolies2(planes); // the polies
+        System.out.format("%08X\n", input.getFilePointer());
+        readNodes();
+        System.out.format("%08X\n", input.getFilePointer());
+        readBrushes(planes);
+        System.out.format("%08X\n", input.getFilePointer());
+        readBrushes(planes);
+        System.out.format("%08X\n", input.getFilePointer());
+        readWord();
+    }
 
+    private void readNodes() throws Exception {
+        int numToRead = readInt();
+        for (int i=0; i<numToRead; i++) {
+            int type = readInt();
+            float dist = readFloat();
+            printf("( %d %s ) \n", type, df.format(dist));
+        }
     }
 
     private plane[] readPlanes() throws Exception {
-        int numData = readInt();
-        plane[] planes = new plane[numData];
-        for (int i=0; i<numData; i++) {
+        int numToRead = readInt();
+        plane[] planes = new plane[numToRead];
+        for (int i=0; i<numToRead; i++) {
             planes[i] = new plane(readFloat(), readFloat(), readFloat(), readFloat());
             plane plane = planes[i];
             printf("( %s %s %s ) %s \n", df.format(plane.x), df.format(plane.y), df.format(plane.z), df.format(plane.dist));
@@ -56,44 +73,53 @@ public class CMParser extends ConverterBase {
         return planes;
     }
 
-    private void readPolies(plane[] planes) throws Exception {
-        int numToRead;
-        while((numToRead = readInt()) > 0) {
-            int type = readInt();
-            printf("%d %d ", numToRead, type);
-            if (type == -1) { // brushes
-                readBrushes(24, planes); // where is the counter, must be a value 0x18 somewhere???
-                return;
-            } else if (numToRead == type) {
-                readPolies(numToRead, planes);
-            } else {
-                printf("Numbers do not equal %06X", input.getFilePointer());
-            }
-        }
-    }
 
-    private void readBrushes(int numToRead, plane[] planes) throws Exception {
+    private void readBrushes(plane[] planes) throws Exception {
+        int numToRead = readInt();
         for (int j=0; j<numToRead; j++) {
             int i = readInt();
             printf(" %d ", i);
             plane plane = planes[i];
             printf("( %s %s %s ) %s \n", df.format(plane.x), df.format(plane.y), df.format(plane.z), df.format(plane.dist));
         }
-        readWord(); // spacer?
     }
-    private void readPolies(int numToRead, plane[] planes) throws Exception {
-        for (int c = 0; c < numToRead; c++) { // how to know number of polies?
-            int numtbr = readUnsignedByte(); // seems to indicate if there is a filler byte?
-            if (numtbr == 0x06) {
-                for (int i = 0; i < 3; i++) readUnsignedByte();
+    private void readPolies1(plane[] planes) throws Exception {
+        int numToRead = readInt();
+        int type = readInt();
+        printf("%d %d \n", numToRead, type);
+
+        for (int c = 0; c < numToRead; c++) {
+            int numtbr = readInt();
+            printf(" [%d] ", numtbr); // this may be the number of edges
+            for (int i = 0; i < numtbr; i++) {
+                int normalsIdx = readInt();
+                printf(" %d ( %s %s %s ) %s\n", normalsIdx, df.format(planes[normalsIdx].x), df.format(planes[normalsIdx].y), df.format(planes[normalsIdx].z), df.format(planes[normalsIdx].dist));
+
             }
+            printf("( %s %s %s ) ", df.format(readFloat()), df.format(readFloat()), df.format(readFloat()));
+            printf("( %s %s %s ) ", df.format(readFloat()), df.format(readFloat()), df.format(readFloat()));
+            printf(" %d", readInt()); // what is this?
+            int normalsIdx = readInt();
+            printf(" %d ( %s %s %s ) %s ", normalsIdx, df.format(planes[normalsIdx].x), df.format(planes[normalsIdx].y), df.format(planes[normalsIdx].z), df.format(planes[normalsIdx].dist));
+
+            println(readString());
+        }
+
+    }
+
+    private void readPolies2(plane[] planes) throws Exception {
+        int numToRead = readInt();
+        int type = readInt();
+        printf("%d %d \n", numToRead, type);
+
+        for (int c = 0; c < numToRead; c++) {
+            int numtbr = readUnsignedByte();
             printf(" [%d] ", numtbr); // this may be the number of edges
             for (int i = 0; i < numtbr; i++) {
                 printf(" %d ", readInt()); // what is this?
             }
             printf("( %s %s %s ) ", df.format(readFloat()), df.format(readFloat()), df.format(readFloat()));
             printf("( %s %s %s ) ", df.format(readFloat()), df.format(readFloat()), df.format(readFloat()));
-            if (numtbr == 6) printf(" %d", readInt()); // what is this?
             int normalsIdx = readInt();
             printf(" %d ( %s %s %s ) %s ", normalsIdx, df.format(planes[normalsIdx].x), df.format(planes[normalsIdx].y), df.format(planes[normalsIdx].z), df.format(planes[normalsIdx].dist));
 
