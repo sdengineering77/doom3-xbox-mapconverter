@@ -24,7 +24,8 @@ public class CMParser extends ConverterBase {
 //            file.seek(Integer.parseInt("16de52", 16));
 //        input.seek(Integer.parseInt("16de35", 16));
 //        input.seek(Integer.parseInt("16de20", 16));
-        input.seek(Integer.parseInt("169853", 16));
+//        input.seek(Integer.parseInt("169853", 16));
+        input.seek(Integer.parseInt("4", 16));
         String name = readString(); // the cm name
         System.out.println(name);
         vertex v1 = readVertex(); // really don't know what these two vertices are... Bounding boxes for brushes perhaps?
@@ -34,7 +35,7 @@ public class CMParser extends ConverterBase {
         int type = readInt(); // seems to be some kind of type...
         System.out.println(" type " + type);
         readUnsignedByte(); // filler
-        if (type == 3) readVerts(); // the vertices, pretty much straightforward
+        readVerts(); // the vertices, pretty much straightforward
         System.out.format("%08X\n", input.getFilePointer());
         readEdges(); // the edges... do contain more than that
         System.out.format("%08X\n", input.getFilePointer());
