@@ -31,7 +31,7 @@ public class MapConverter extends ConverterBase {
     }
 
     private void printMapEntries() throws Exception {
-        while(input.getFilePointer() < input.length() && "{".equals(readToken())) {
+        while(!isEOF() && "{".equals(readToken())) {
             println("{");
             indent++;
             printMapEntryMeta();

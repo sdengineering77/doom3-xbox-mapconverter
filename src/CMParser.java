@@ -7,7 +7,10 @@ public class CMParser extends ConverterBase {
     private record plane(float x, float y, float z, float dist) {};
 
     public static void main(String[] args) throws Exception {
-        try (RandomAccessFile file = new RandomAccessFile("C:\\utils\\xbox\\_mars_city1_1.gob\\base\\xbox_gen\\maps\\vv\\mars_city1_1.cm.x", "r")) {
+        // 2a33b0 mcu_1.cm.x canismover
+        try (RandomAccessFile file = new RandomAccessFile("C:\\utils\\xbox\\_mcu_1.gob\\base\\xbox_gen\\maps\\vv\\mcu_1.cm.x", "r")) {
+//        try (RandomAccessFile file = new RandomAccessFile("C:\\utils\\xbox\\_mars_city2_1.gob\\base\\xbox_gen\\maps\\vv\\mars_city2_1.cm.x", "r")) {
+//        try (RandomAccessFile file = new RandomAccessFile("C:\\utils\\xbox\\_mars_city1_1.gob\\base\\xbox_gen\\maps\\vv\\mars_city1_1.cm.x", "r")) {
             CMParser p = new CMParser(file);
             p.convert();
         }
@@ -25,41 +28,56 @@ public class CMParser extends ConverterBase {
 //        input.seek(Integer.parseInt("16de35", 16));
 //        input.seek(Integer.parseInt("16de20", 16));
 //        input.seek(Integer.parseInt("169853", 16));
-        input.seek(Integer.parseInt("4", 16));
-        String name = readString(); // the cm name
-        System.out.println(name);
-        vertex v1 = readVertex(); // really don't know what these two vertices are... Bounding boxes for brushes perhaps?
-        vertex v2 = readVertex();
-        System.out.println("( " + df.format(v1.x) + " " + df.format(v1.y) + " " + df.format(v1.z) + " ) ");
-        System.out.println("( " + df.format(v2.x) + " " + df.format(v2.y) + " " + df.format(v2.z) + " ) ");
-        int type = readInt(); // seems to be some kind of type...
-        System.out.println(" type " + type);
-        readUnsignedByte(); // filler
-        readVerts(); // the vertices, pretty much straightforward
-        System.out.format("%08X\n", input.getFilePointer());
-        readEdges(); // the edges... do contain more than that
-        System.out.format("%08X\n", input.getFilePointer());
-        plane[] planes = readPlanes(); // the planes (refered to in polies and brushes?)
-        System.out.format("%08X\n", input.getFilePointer());
-        readPolies1(planes); // the brushes ?
-        System.out.format("%08X\n", input.getFilePointer());
-        readPolies2(planes); // the polies
-        System.out.format("%08X\n", input.getFilePointer());
-        readNodes();
-        System.out.format("%08X\n", input.getFilePointer());
-        readBrushes(planes);
-        System.out.format("%08X\n", input.getFilePointer());
-        readBrushes(planes);
-        System.out.format("%08X\n", input.getFilePointer());
-        readWord();
+//        input.seek(Integer.parseInt("4", 16));
+//        input.seek(Integer.parseInt("1efcf0", 16)); // trigger_once_90 "C:\\utils\\xbox\\_mars_city2_1.gob\\base\\xbox_gen\\maps\\vv\\mars_city2_1.cm.x"
+        input.seek(Integer.parseInt("29eb46", 16)); // canismover "C:\\utils\\xbox\\_mcu_1.gob\\base\\xbox_gen\\maps\\vv\\mcu_1.cm.x"
+
+
+        while(!isEOF()) {
+            String name = readString(); // the cm name
+            System.out.println(name);
+            vertex v1 = readVertex(); // really don't know what these two vertices are... Bounding boxes for brushes perhaps?
+            vertex v2 = readVertex();
+            System.out.println("( " + df.format(v1.x) + " " + df.format(v1.y) + " " + df.format(v1.z) + " ) ");
+            System.out.println("( " + df.format(v2.x) + " " + df.format(v2.y) + " " + df.format(v2.z) + " ) ");
+            int type = readInt(); // seems to be some kind of type...
+            System.out.println(" type " + type);
+            readUnsignedByte(); // filler
+            readVerts(); // the vertices, pretty much straightforward
+            System.out.format("%08X\n", input.getFilePointer());
+            readEdges(); // the edges... do contain more than that
+            System.out.format("%08X\n", input.getFilePointer());
+            plane[] planes = readPlanes(); // the planes (refered to in polies and brushes?)
+            System.out.format("%08X\n", input.getFilePointer());
+            readPolies1(planes); // the brushes ?
+            System.out.format("%08X\n", input.getFilePointer());
+            readPolies2(planes); // the polies
+            System.out.format("%08X\n", input.getFilePointer());
+            readNodes();
+            System.out.format("%08X\n", input.getFilePointer());
+//            readBrushes(planes);
+//            System.out.format("%08X\n", input.getFilePointer());
+//            readBrushes(planes);
+//            System.out.format("%08X\n", input.getFilePointer());
+//            readWord();
+        }
     }
 
     private void readNodes() throws Exception {
         int numToRead = readInt();
+        if (numToRead != 1) {
+            System.out.println("Yooooooo");
+        }
         for (int i=0; i<numToRead; i++) {
             int type = readInt();
             float dist = readFloat();
-            printf("( %d %s ) \n", type, df.format(dist));
+            printf("( %d %s ) ", type, df.format(dist));
+            // now read all the poly refs (map to polies array)
+            readBrushes();
+            // now read all brush refs (maps to brush array)
+            readBrushes();
+            // read the filler, what does it mean?
+            printf("[%d] \n", readWord());
         }
     }
 
@@ -75,13 +93,13 @@ public class CMParser extends ConverterBase {
     }
 
 
-    private void readBrushes(plane[] planes) throws Exception {
+    private void readBrushes() throws Exception {
         int numToRead = readInt();
         for (int j=0; j<numToRead; j++) {
             int i = readInt();
             printf(" %d ", i);
-            plane plane = planes[i];
-            printf("( %s %s %s ) %s \n", df.format(plane.x), df.format(plane.y), df.format(plane.z), df.format(plane.dist));
+//            plane plane = planes[i];
+//            printf("( %s %s %s ) %s \n", df.format(plane.x), df.format(plane.y), df.format(plane.z), df.format(plane.dist));
         }
     }
     private void readPolies1(plane[] planes) throws Exception {
